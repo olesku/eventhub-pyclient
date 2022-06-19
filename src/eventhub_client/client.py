@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import websockets
 import json
 import asyncio
