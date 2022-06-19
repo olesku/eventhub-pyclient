@@ -51,7 +51,7 @@ class Eventhub:
   async def __read(self):
     try:
       data = await self._websocket.recv()
-      print("Received: %s" %(data))
+      #print("Received: %s" %(data))
       resp = json.loads(data)
       rpcId = resp['id']
       if rpcId in self._rpc_awaitables:
@@ -73,7 +73,7 @@ class Eventhub:
       if len(self._rpc_awaitables) > 0 or len(self._subscription_callbacks) > 0:
         asyncio.create_task(self.consume())
     else:
-      print("Disconnected")
+      #print("Disconnected")
       await asyncio.sleep(1)
 
   async def disconnect(self):
