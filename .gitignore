@@ -2,4 +2,4 @@
 .vscode/*
 dist/**
 **/*egg-info/**
-client_test.py
+src/client_test.py
