@@ -13,7 +13,7 @@ pip install git+https://github.com/olesku/eventhub-pyclient
 import asyncio
 from eventhub_client import Eventhub
 
-client = Eventhub("ws://localhost:8080", "")
+client = Eventhub("ws://localhost:8080", "myJWT")
 
 async def topic1_callback(topic, message):
   print("Message received on %s: %s" % (topic,message))
