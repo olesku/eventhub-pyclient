@@ -39,7 +39,6 @@ class Eventhub:
     async def __wait_for_response(self, rpcId):
         self._rpc_awaitables[rpcId] = asyncio.Future()
 
-        # FIXME: Handle timeout.
         resp = await asyncio.wait_for(self._rpc_awaitables[rpcId], 5)
         del self._rpc_awaitables[rpcId]
         return resp
@@ -82,8 +81,8 @@ class Eventhub:
 
     async def disconnect(self):
         try:
-            await asyncio.wait(
-                await self.__rpc_request_wait_for_response("DISCONNECT", {}), 1
+            await asyncio.wait_for(
+                self.__rpc_request_wait_for_response("DISCONNECT", {}), 1
             )
             self._websocket.close()
             self.is_connected = False
