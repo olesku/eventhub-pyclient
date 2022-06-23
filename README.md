@@ -1,6 +1,6 @@
 # eventhub-pyclient
 
-Python client for Eventhub.
+Python client for [Eventhub](https://github.com/olesku/eventhub).
 
 ## How to install
 ```bash
@@ -12,7 +12,6 @@ pip install git+https://github.com/olesku/eventhub-pyclient
 ```python
 import asyncio
 from eventhub_client import Eventhub
-import sys
 
 client = Eventhub("ws://localhost:8080", "")
 
