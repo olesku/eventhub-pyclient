@@ -83,7 +83,7 @@ class Eventhub:
     async def disconnect(self):
         try:
             await asyncio.wait(
-                self.__rpc_request_wait_for_response("DISCONNECT", {}), 1
+                await self.__rpc_request_wait_for_response("DISCONNECT", {}), 1
             )
             self._websocket.close()
             self.is_connected = False
