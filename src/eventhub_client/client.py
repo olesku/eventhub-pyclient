@@ -3,15 +3,25 @@ import json
 import asyncio
 
 
+class InvalidResponseError(Exception):
+    """Invalid response"""
+    pass
+
 class RPCResponse:
-    def __init__(self, id, result=None, error=None):
-        self.id = id
-        self.result = result
-        self.error = error
+    def __init__(self, data):
+        self.__parse__(data)
+
+    def __parse__(self, data):
+        resp = json.loads(data)
+        self.id = resp.get("id", None)
+        self.result = resp.get("result", None)
+        self.error = resp.get("error", None)
+
+        if self.result is None and self.error is None or self.result is not None and self.id is None:
+            raise InvalidResponseError
 
     def is_error():
         return self.error is not None
-
 
 class Eventhub:
     def __init__(self, url, jwt):
@@ -50,15 +60,13 @@ class Eventhub:
     async def __read(self):
         try:
             data = await self._websocket.recv()
-            # print("Received: %s" %(data))
-            resp = json.loads(data)
-            rpcId = resp["id"]
-            if rpcId in self._rpc_awaitables:
-                self._rpc_awaitables[rpcId].set_result(resp)
-            elif rpcId in self._subscription_callbacks:
+            resp = RPCResponse(data)
+            if resp.id in self._rpc_awaitables:
+                self._rpc_awaitables[resp.id].set_result(resp)
+            elif resp.id in self._subscription_callbacks:
                 asyncio.create_task(
-                    self._subscription_callbacks[rpcId](
-                        resp["result"]["topic"], resp["result"]["message"]
+                    self._subscription_callbacks[resp.id](
+                        resp.result["topic"], resp.result["message"]
                     )
                 )
         except:
@@ -76,7 +84,6 @@ class Eventhub:
             if len(self._rpc_awaitables) > 0 or len(self._subscription_callbacks) > 0:
                 asyncio.create_task(self.consume())
         else:
-            # print("Disconnected")
             await asyncio.sleep(1)
 
     async def disconnect(self):
@@ -96,12 +103,13 @@ class Eventhub:
             return self._websocket.open
         return False
 
-    async def subscribe(self, topic, callback):
-        resp = await self.__rpc_request_wait_for_response("SUBSCRIBE", {"topic": topic})
+    async def subscribe(self, topic, callback, opts={}):
+        opts["topic"] = topic
+        resp = await self.__rpc_request_wait_for_response("SUBSCRIBE", opts)
 
-        if resp["result"]["action"] == "subscribe" and resp["result"]["status"] == "ok":
-            self._subscription_callbacks[resp["id"]] = callback
-            self._subscription_id_map.setdefault(topic, []).append(resp["id"])
+        if resp.result["action"] == "subscribe" and resp.result["status"] == "ok":
+            self._subscription_callbacks[resp.id] = callback
+            self._subscription_id_map.setdefault(topic, []).append(resp.id)
 
         return resp
 
@@ -118,11 +126,13 @@ class Eventhub:
 
     async def list_subscriptions(self):
         resp = await self.__rpc_request_wait_for_response("LIST", {})
-        return resp["result"]
+        return resp.result
 
-    async def publish(self, topic, message):
+    async def publish(self, topic, message, opts={}):
+        opts["topic"] = topic
+        opts["message"] = message
         return await self.__rpc_request_wait_for_response(
-            "PUBLISH", {"topic": topic, "message": message}
+            "PUBLISH", opts
         )
 
     async def set(self, key, value):
@@ -130,10 +140,19 @@ class Eventhub:
             "SET", {"key": key, "value": value}
         )
 
+    async def ping(self):
+     resp = await self.__rpc_request_wait_for_response("PING", {})
+     return resp.result["pong"]
+
     async def get(self, key):
         res = await self.__rpc_request_wait_for_response("GET", {"key": key})
 
-        return res["result"]["value"]
+        return res.result["value"]
 
     async def delete(self, key):
         return await self.__rpc_request_wait_for_response("DEL", {"key": key})
+
+    async def getEventlog(self, topic, opts={}):
+        opts["topic"] = topic
+        res = await self.__rpc_request_wait_for_response("EVENTLOG", opts)
+        return res.result["items"]
