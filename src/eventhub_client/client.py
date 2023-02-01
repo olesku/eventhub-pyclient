@@ -1,7 +1,7 @@
 import websockets
 import json
 import asyncio
-
+import urllib.parse
 
 class InvalidResponseError(Exception):
     """Invalid response"""
@@ -24,14 +24,19 @@ class RPCResponse:
         return self.error is not None
 
 class Eventhub:
-    def __init__(self, url, jwt):
+    def __init__(self, url, jwt=""):
         self.url = url
-        self.jwt = jwt
         self._rpc_awaitables = dict()
         self._subscription_callbacks = dict()
         self._subscription_id_map = dict()
         self._rpc_id_counter = 0
         self._websocket = None
+
+        if jwt:
+            urlParts = urllib.parse.urlparse(url)
+            qs = dict(urllib.parse.parse_qsl(urlParts.query))
+            qs.update({'auth': jwt})
+            self.url = urlParts._replace(query=urllib.parse.urlencode(qs)).geturl()
 
     async def __rpc_request(self, method, params):
         payload = {
