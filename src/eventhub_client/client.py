@@ -77,8 +77,8 @@ class Eventhub:
         except:
             pass
 
-    async def connect(self):
-        self._websocket = await websockets.connect(self.url)
+    async def connect(self, **kwargs):
+        self._websocket = await websockets.connect(self.url, **kwargs)
         asyncio.create_task(self.consume())
         return self.is_connected()
 
