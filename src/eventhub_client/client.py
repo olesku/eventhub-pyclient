@@ -1,7 +1,9 @@
-import websockets
-import json
 import asyncio
+import json
 import urllib.parse
+
+import websockets
+
 
 class InvalidResponseError(Exception):
     """Invalid response"""
@@ -20,7 +22,7 @@ class RPCResponse:
         if self.result is None and self.error is None or self.result is not None and self.id is None:
             raise InvalidResponseError
 
-    def is_error():
+    def is_error(self):
         return self.error is not None
 
 class Eventhub:
